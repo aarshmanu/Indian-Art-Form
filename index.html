@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interactive Art Map – India (CO1)</title>
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <style>
+    :root{
+      --bg:#0f172a;          /* slate-900 */
+      --card:#111827;        /* gray-900 */
+      --muted:#94a3b8;       /* slate-400 */
+      --text:#e5e7eb;        /* gray-200 */
+      --accent:#a78bfa;      /* violet-300 */
+      --pill:#1f2937;        /* gray-800 */
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+    header{
+      position:sticky;top:0;z-index:500;
+      background:linear-gradient(180deg,rgba(2,6,23,.95),rgba(2,6,23,.75));
+      backdrop-filter: blur(6px);
+      border-bottom:1px solid rgba(148,163,184,.15);
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:14px 18px}
+    h1{margin:6px 0 2px;font-size:clamp(20px,3vw,28px);letter-spacing:.2px}
+    .subtitle{color:var(--muted);font-size:14px}
+    .team{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+    .pill{padding:6px 10px;border-radius:999px;background:var(--pill);border:1px solid rgba(148,163,184,.2);font-size:12.5px}
+
+    main{display:grid;grid-template-columns:340px 1fr;gap:14px;max-width:1200px;margin:14px auto;padding:0 18px}
+    @media (max-width: 900px){
+      main{grid-template-columns:1fr}
+    }
+
+    .panel{background:var(--card);border:1px solid rgba(148,163,184,.15);border-radius:18px;overflow:hidden}
+    .panel h2{font-size:16px;margin:0;padding:14px 16px;border-bottom:1px solid rgba(148,163,184,.12)}
+    .panel .section{padding:12px 16px;border-bottom:1px dashed rgba(148,163,184,.12)}
+    .panel .section:last-child{border-bottom:0}
+
+    #map{height:70vh;min-height:420px;border-radius:18px;overflow:hidden;border:1px solid rgba(148,163,184,.15)}
+
+    .filters{display:flex;flex-wrap:wrap;gap:8px}
+    .btn{padding:6px 10px;border-radius:12px;border:1px solid rgba(148,163,184,.2);background:#0b1220;color:var(--text);cursor:pointer;font-size:12.5px}
+    .btn.active{outline:2px solid var(--accent);}
+    .legend{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+    .legend-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+    .dot{width:11px;height:11px;border-radius:50%}
+
+    .searchbar{display:flex;gap:8px}
+    .searchbar input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid rgba(148,163,184,.25);background:#0b1220;color:var(--text)}
+    .searchbar button{padding:10px 12px;border-radius:12px;border:1px solid rgba(148,163,184,.25);background:#0b1220;color:var(--text);cursor:pointer}
+
+    footer{max-width:1200px;margin:16px auto 26px;padding:0 18px;color:var(--muted);font-size:14px}
+    a{color:var(--accent)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Interactive Art Map – India <span style="opacity:.7">(CO1)</span></h1>
+      <div class="subtitle">Explore how Indian art styles evolved across regions through key sites, artists, and movements.</div>
+      <div class="team">
+        <span class="pill">Aarsh Manu (RA2311003012281)</span>
+        <span class="pill">Yatharth Arya (RA2311003012297)</span>
+        <span class="pill">Harish Putrevu (RA2311003012297)</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" aria-label="Controls">
+      <h2>Map Controls</h2>
+      <div class="section">
+        <div class="searchbar">
+          <input id="search" type="text" placeholder="Search by place, style, or state… (e.g., 'Mughal', 'Rajasthan')" />
+          <button id="clearSearch" title="Clear">Clear</button>
+        </div>
+      </div>
+      <div class="section">
+        <strong style="font-size:13px">Filter by Category</strong>
+        <div class="filters" style="margin-top:8px">
+          <button class="btn active" data-cat="all">All</button>
+          <button class="btn" data-cat="Painting">Painting</button>
+          <button class="btn" data-cat="Architecture">Architecture</button>
+          <button class="btn" data-cat="Textile">Textile</button>
+          <button class="btn" data-cat="School/Movement">School/Movement</button>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="dot" style="background:#60a5fa"></span> Painting</div>
+          <div class="legend-item"><span class="dot" style="background:#34d399"></span> Architecture</div>
+          <div class="legend-item"><span class="dot" style="background:#f59e0b"></span> Textile</div>
+          <div class="legend-item"><span class="dot" style="background:#ef4444"></span> School/Movement</div>
+        </div>
+      </div>
+      <div class="section">
+        <strong style="font-size:13px">How to use</strong>
+        <ul style="margin:8px 0 0 18px;line-height:1.5;color:var(--muted)">
+          <li>Click a marker to view images and short notes.</li>
+          <li>Use filters or search to narrow locations.</li>
+          <li>Zoom or drag the map to explore regions.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div id="map" role="region" aria-label="Interactive Map of Indian Art Sites"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p><strong>Objective:</strong> To explore the geographic spread and influence of different art styles across India by linking locations with movements, artists, and artworks.</p>
+  </footer>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script>
+    // --- Data: Key art locations across India ---
+    // Each entry: { name, state, coords:[lat,lng], category, period, summary, image, link }
+    const PLACES = [
+      {
+        name: "Ajanta Caves",
+        state: "Maharashtra",
+        coords: [20.5519, 75.7033],
+        category: "Painting",
+        period: "2nd c. BCE – 6th c. CE (Satavahana–Vakataka)",
+        summary: "Renowned Buddhist cave murals and frescoes depicting Jataka tales; pinnacle of ancient Indian wall painting.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Ajanta_Caves%2C_cave_26%2C_2019.jpg/640px-Ajanta_Caves%2C_cave_26%2C_2019.jpg",
+        link: "https://en.wikipedia.org/wiki/Ajanta_Caves"
+      },
+      {
+        name: "Ellora Caves",
+        state: "Maharashtra",
+        coords: [20.0268, 75.1790],
+        category: "Architecture",
+        period: "6th – 10th c. CE (Rashtrakuta, Kalachuri)",
+        summary: "Monumental rock-cut complex with Hindu, Buddhist, Jain caves; Kailasa temple showcases advanced stone architecture.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Ellora_cave16_001.jpg/640px-Ellora_cave16_001.jpg",
+        link: "https://en.wikipedia.org/wiki/Ellora_Caves"
+      },
+      {
+        name: "Khajuraho Group of Monuments",
+        state: "Madhya Pradesh",
+        coords: [24.8530, 79.9199],
+        category: "Architecture",
+        period: "10th – 12th c. CE (Chandela)",
+        summary: "Temple complex famed for intricate sandstone sculptures illustrating divine, daily, and courtly life themes.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Lakshmana_Temple%2C_Khajuraho.jpg/640px-Lakshmana_Temple%2C_Khajuraho.jpg",
+        link: "https://en.wikipedia.org/wiki/Khajuraho_Group_of_Monuments"
+      },
+      {
+        name: "Thanjavur (Tanjore) Painting",
+        state: "Tamil Nadu",
+        coords: [10.7867, 79.1378],
+        category: "Painting",
+        period: "16th c. CE onward (Nayak, Maratha courts)",
+        summary: "Iconic devotional panels with rich colors, gesso work, and gold foil; centered around Thanjavur.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Tanjore_painting_of_Sri_Bala_Krishna.jpg/640px-Tanjore_painting_of_Sri_Bala_Krishna.jpg",
+        link: "https://en.wikipedia.org/wiki/Thanjavur_painting"
+      },
+      {
+        name: "Varanasi – Silk & Miniatures",
+        state: "Uttar Pradesh",
+        coords: [25.3176, 82.9739],
+        category: "Textile",
+        period: "Mughal era onward",
+        summary: "Banarasi silk weaving heritage and schools of miniature painting nurtured under regional patronage.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Banarasi_silk_sarees.jpg/640px-Banarasi_silk_sarees.jpg",
+        link: "https://en.wikipedia.org/wiki/Banarasi_silk"
+      },
+      {
+        name: "Santiniketan – Bengal School",
+        state: "West Bengal",
+        coords: [23.6800, 87.6827],
+        category: "School/Movement",
+        period: "Early 20th c. (Tagore, Nandalal Bose)",
+        summary: "Hub for Bengal School synthesizing Indian traditions with modernism; pivotal in Indian national art identity.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Nandalal_Bose_Bull.jpg/640px-Nandalal_Bose_Bull.jpg",
+        link: "https://en.wikipedia.org/wiki/Bengal_School_of_Art"
+      },
+      {
+        name: "Hampi – Vijayanagara Art",
+        state: "Karnataka",
+        coords: [15.3350, 76.4600],
+        category: "Architecture",
+        period: "14th – 16th c. (Vijayanagara Empire)",
+        summary: "Granite temples, bazaars, and reliefs exemplifying imperial Dravidian style and narrative friezes.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Vittala_Temple%2C_Hampi%2C_Karnataka.jpg/640px-Vittala_Temple%2C_Hampi%2C_Karnataka.jpg",
+        link: "https://en.wikipedia.org/wiki/Hampi"
+      },
+      {
+        name: "Udaipur – Mewar Painting",
+        state: "Rajasthan",
+        coords: [24.5854, 73.7125],
+        category: "Painting",
+        period: "16th – 19th c. (Rajput courts)",
+        summary: "Mewar school noted for bold lines and vibrant court/landscape scenes; major center at Udaipur.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Baghdevara.jpg/640px-Baghdevara.jpg",
+        link: "https://en.wikipedia.org/wiki/Rajput_painting"
+      },
+      {
+        name: "Jaipur – Amber & Kishangarh Styles",
+        state: "Rajasthan",
+        coords: [26.9124, 75.7873],
+        category: "Painting",
+        period: "17th – 18th c. (Rajput courts)",
+        summary: "Jaipur/Kishangarh miniatures famed for lyrical portraits and refined pigment work.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Bani_Thani%2C_Rajasthan.jpg/640px-Bani_Thani%2C_Rajasthan.jpg",
+        link: "https://en.wikipedia.org/wiki/Kishangarh_painting"
+      },
+      {
+        name: "Delhi – Mughal Miniatures",
+        state: "Delhi",
+        coords: [28.6139, 77.2090],
+        category: "Painting",
+        period: "16th – 18th c. (Mughal ateliers)",
+        summary: "Imperial workshops developed naturalistic portraiture and detailed narrative miniatures blending Persian & Indic.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Emperor_Shah_Alam_II%2C_c.1780.jpg/640px-Emperor_Shah_Alam_II%2C_c.1780.jpg",
+        link: "https://en.wikipedia.org/wiki/Mughal_painting"
+      },
+      {
+        name: "Amritsar – Sikh Art",
+        state: "Punjab",
+        coords: [31.6340, 74.8723],
+        category: "Architecture",
+        period: "18th – 19th c.",
+        summary: "Golden Temple aesthetics and Sikh manuscript illustration shaping regional sacred art.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Golden_Temple_Bar_Sahib_from_front.jpg/640px-Golden_Temple_Bar_Sahib_from_front.jpg",
+        link: "https://en.wikipedia.org/wiki/Golden_Temple"
+      },
+      {
+        name: "Bhubaneswar – Kalinga Temples",
+        state: "Odisha",
+        coords: [20.2961, 85.8245],
+        category: "Architecture",
+        period: "7th – 13th c. (Kalinga)",
+        summary: "Lingaraja and allied temples exemplify Kalinga spire (rekha deul) and sculptural programs.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Lingaraja_Temple_Bhubaneswar_Odisha.jpg/640px-Lingaraja_Temple_Bhubaneswar_Odisha.jpg",
+        link: "https://en.wikipedia.org/wiki/Lingaraja_Temple"
+      }
+    ];
+
+    // --- Map setup ---
+    const map = L.map('map', {scrollWheelZoom:true}).setView([22.5, 79.0], 5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Colors by category
+    const COLOR = {
+      'Painting': '#60a5fa',
+      'Architecture': '#34d399',
+      'Textile': '#f59e0b',
+      'School/Movement': '#ef4444'
+    };
+
+    // Create marker layer group
+    const markerLayer = L.layerGroup().addTo(map);
+
+    function createPopup(p){
+      const img = p.image ? `<img src="${p.image}" alt="${p.name}" style="width:100%;height:auto;border-radius:10px;margin-bottom:8px">` : '';
+      const link = p.link ? `<p style="margin:.4rem 0 0"><a href="${p.link}" target="_blank" rel="noopener">Learn more</a></p>` : '';
+      return `
+        <div style="max-width:260px">
+          ${img}
+          <h3 style="margin:0 0 4px;font-size:16px">${p.name}</h3>
+          <div style="color:#93a4b8;font-size:12.5px">${p.state} • <span style="color:${COLOR[p.category]}">${p.category}</span></div>
+          <div style="margin:.4rem 0;font-size:12.5px;color:#cbd5e1">${p.period}</div>
+          <p style="margin:.4rem 0 0;line-height:1.45">${p.summary}</p>
+          ${link}
+        </div>`;
+    }
+
+    let markers = [];
+
+    function renderMarkers(filterCat = 'all', query = ''){
+      markerLayer.clearLayers();
+      markers = [];
+
+      const q = query.trim().toLowerCase();
+
+      PLACES.forEach(p => {
+        const matchesCat = (filterCat === 'all') || (p.category === filterCat);
+        const matchesSearch = !q || [p.name, p.state, p.category, p.period, p.summary]
+          .join(' ').toLowerCase().includes(q);
+        if(!(matchesCat && matchesSearch)) return;
+
+        const marker = L.circleMarker(p.coords, {
+          radius: 8,
+          fillColor: COLOR[p.category] || '#888',
+          color: '#0b1220',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9
+        }).addTo(markerLayer);
+        marker.bindPopup(createPopup(p));
+        markers.push(marker);
+      });
+
+      // Fit bounds if we have markers
+      if(markers.length){
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.15));
+      }
+    }
+
+    // Initial render
+    renderMarkers();
+
+    // --- UI interactions ---
+    const filterButtons = document.querySelectorAll('.btn[data-cat]');
+    let activeCat = 'all';
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeCat = btn.dataset.cat;
+        renderMarkers(activeCat, document.getElementById('search').value);
+      });
+    });
+
+    const searchInput = document.getElementById('search');
+    const clearBtn = document.getElementById('clearSearch');
+
+    function applySearch(){
+      renderMarkers(activeCat, searchInput.value);
+    }
+
+    searchInput.addEventListener('input', applySearch);
+    clearBtn.addEventListener('click', () => { searchInput.value = ''; applySearch(); });
+
+  </script>
+</body>
+</html>
